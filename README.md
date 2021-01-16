@@ -1,70 +1,62 @@
-# Getting Started with Create React App
+# Dockerizing React JS Application
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Dev Environment Setup
 
-## Available Scripts
+- Create React App using <https://github.com/facebook/create-react-app> documentation
+- Then run the application. Modify the App.js to override the default content(this is optional).
+- Create a Dockerfile and put the content as present in this git repo. You may have to modify the version of node or react-script(the exact version of this can be get from your application package.json) based on the target enviornment you want to run the application.
+- Create a docker-compose.yml file and put the same content as present in this git repo docker-compose.yml file.
 
-In the project directory, you can run:
+- Go to command prompt and execute:
+  "docker-compose up -d --build"
+- Once it sucessfully executed then go to <http://localhost:3000/> to verify your application is running from docker container.
 
-### `npm start`
+- To stop the container execute following command: "docker-compose stop"
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- In docker-compose.yml we have mentioend "CHOKIDAR_USEPOLLING=true" which enables a polling mechanism via chokidar (which wraps fs.watch, fs.watchFile, and fsevents) so that hot-reloading will work.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+- In the application I have created a .env file where you should put all your application keys, example: Google API key. I'm accessing that key in App.js and displaying it. Ideally this file should be commited to git and it should be added in your CI/CD pipeline to safeguard your API keys.
 
-### `npm test`
+NOTE: While building and runing the container it'll ask for admin permission for Windows users and once you allow to access the file location by docker then it'll copy those files to build and run the container.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Prod Environment Setup
 
-### `npm run build`
+- Similar to Development environemnt here I have created Dockerfile.prod and docker-compose.prod.yml files.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- In production environment we don't need "CHOKIDAR_USEPOLLING=true", so that line has been removed.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- To build and run the container we need run following command: "docker-compose -f docker-compose.prod.yml up -d --build"
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- To verify your application running from container go to <http://localhost:1337/> and you should be able to see your application.
 
-### `npm run eject`
+## React Router and Nginx
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+- Since here the Web Server used is Nginx, we have to make some configuration chages to make sure React Router is working in docker container.
+- Create the following folder "nginx" along with a nginx.conf file in the application root.
+- Add following content to the nginx.conf file.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+server {
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+  listen 80;
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+  location / {
+    root   /usr/share/nginx/html;
+    index  index.html index.htm;
+    try_files $uri $uri/ /index.html;
+  }
 
-## Learn More
+  error_page   500 502 503 504  /50x.html;
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+  location = /50x.html {
+    root   /usr/share/nginx/html;
+  }
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+}
+```
 
-### Code Splitting
+- Add following line in the Dockerfile.prod
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```
+COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
+```
