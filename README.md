@@ -60,3 +60,5 @@ server {
 ```
 COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
 ```
+
+Reference : https://mherman.org/blog/dockerizing-a-react-app/ 
